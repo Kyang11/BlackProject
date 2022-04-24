@@ -1,177 +1,196 @@
-from distutils.command.build import build
-import os
 import random
-def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-class CardTable():
-    def __init__(self, value, suit):
-        self. suit = suit
-        self.value = value
-    def show(self):
-        print(f"{self.value} of {self.suit}".format(self.value, self.suit))
-        
-    player_call = True
-    dealer_call =True 
-    
-class Deck(CardTable):
+import os
+class UI():
     def __init__(self):
-        self.cards=[]
-        self.build()
-        
-    def build(self):
-        for s in ["Space", "Clubs", "Diamonds", "Hearts"]:
-            
-            card_deck=['2','3','4','5','6','7','8','9','10','A','J','Q','K']
-            
-            for v in card_deck:
-                self.cards.append(CardTable(v, s))
-                
-    def show(self):
-        for c in self.cards:
-            c.show()
-            
+        self.playground = True
+        self.deck = []
+        # self.dealer= Dealer()
+    def play_game(self):
+        while self.playground:
+            print('Welcome to BlackJack Table 1!')
+            input("Please press any key to continue.")
+            dealer = Dealer()
+            new_deck = dealer.shuffle()
+            player = Player()
+            player.deal(new_deck)
+            player.counting(new_deck)
+            value = input("Please type quit to stop playing.")
+            if value == 'quit':
+                self.playground = False
+                print("Thanks for playing.")
+                return
+class Dealer(UI):
+    def __init__(self):
+        super().__init__()
+        self.facevalues = [2, 3, 4, 5, 6, 7, 8, 9, 10, 'A', 'J', 'Q', 'K']
+        self.suits = ['spades', 'hearts', 'diamonds', 'clubs']
+        self.new_shuffle_deck = []
     def shuffle(self):
-        for i in range(len(self.cards)-1, 0, -1):
-            r = random.randint(0, i)
-            self.cards[i], self.cards[r] = self.cards[r], self.cards[i]
-            
-    def drawCard(self):
-       return self.cards.pop()
-   
-    def total(self,turn):
-        self.total =0
-        face=['A','J','Q','K']
-        for card in turn:
-            if card in range(build.card_deck):
-                self.total+=card
-            elif card in face:
-                self.total+=10
+        for suit in self.suits:
+            for card in self.facevalues:
+                new_card = Card(card, suit)
+                self.new_shuffle_deck.append(new_card)
+        return self.new_shuffle_deck
+class Card():
+    def __init__(self, card, suit):
+        self.card = card
+        self.suit = suit
+class Player(Dealer):
+    def __init__(self):
+        super().__init__()
+        self.playerhand = []
+        self.dealerhand = []
+        self.points = {2: 2, 3: 3, 4: 4, 5: 5, 6: 6, 7: 7,
+                       8: 8, 9: 9, 10: 10, 'J': 10, 'Q': 10, 'K': 10, 'A': 11}
+        self.player_hit = True
+        self.player_stand = True
+    def deal(self, new_deck):
+        card = random.choice(new_deck)
+        self.playerhand.append(card)
+        card = random.choice(new_deck)
+        self.dealerhand.append(card)
+        card = random.choice(new_deck)
+        self.playerhand.append(card)
+        print(
+            f"You have been dealt {self.playerhand[0].card} of {self.playerhand[0].suit} and {self.playerhand[1].card} of {self.playerhand[1].suit}.")
+        card = random.choice(new_deck)
+        self.dealerhand.append(card)
+        print(
+            f"Dealer is showing {self.dealerhand[0].card} of {self.dealerhand[0].suit}.")
+    def counting(self, new_deck):
+        player_done = False
+        # first_card = self.playerhand[0].card
+        # self.points[first_card]
+        # second_card = self.playerhand[1].card
+        # self.points[second_card]
+        phrase = self.player_hand_str(self.playerhand)
+        total = self.calulate_score_total(self.playerhand)
+        # total = self.points[first_card] + self.points[second_card]
+        if total == 21:
+            print(f"Congrats!! You have {phrase} and have won Blackjack!!")
+            return
+        else:
+            print(f"You have {phrase}have {total} points")
+        dealer_first_run = True
+        while self.player_hit:
+            phrase = self.player_hand_str(self.playerhand)
+            if total == 21:
+                print(f"{phrase}Congrats you hit 21!!")
+                return
+            if total < 21 and player_done == False:
+                response = input(
+                    "Would you like to hit or stand [type: hit or stand]? ")
+            if response.lower() == 'hit':
+                card = random.choice(new_deck)
+                self.playerhand.append(card)
+                for i in range(2, len(self.playerhand)):
+                    # next_card = self.playerhand[i].card
+                    phrase = self.player_hand_str(self.playerhand)
+                    total = self.calulate_score_total(self.playerhand)
+                    # print(
+                    #     f"{ self.playerhand[i].card} of {self.playerhand[i].suit} and you have {total} points.")
+                    print(f"You have {phrase}have {total} points")
+                    if total > 21:
+                        print(
+                            f"You have {total} points so you have busted.")
+                        return
+            if response.lower() == 'stand':
+                # self.player_hit = False
+                if player_done == False:
+                    print("Player stands")
+                    print("Dealer show your cards: ")
+                    player_done = True
+                if dealer_first_run:
+                    dealer_first_card = self.dealerhand[0].card
+                    self.points[dealer_first_card]
+                    dealer_second_card = self.dealerhand[1].card
+                    self.points[dealer_second_card]
+                    dealer_total = self.calulate_score_total(self.dealerhand)
+                    dealer_first_run = False
+                for i in range(1, len(self.dealerhand)):
+                    dealer_next_card = self.dealerhand[i].card
+                    dealer_total = self.calulate_score_total(self.dealerhand)
+                    phrase = self.player_hand_str(self.dealerhand)
+                    if "A" == self.dealerhand[i].card:
+                        # print("it has an 'A'.")
+                        # print(f"dealer has {phrase}total of {dealer_total} points.")
+                        if dealer_total >= 17 and dealer_total < 21:
+                            phrase = self.player_hand_str(self.dealerhand)
+                            print(
+                                f"dealer has {phrase}total of {dealer_total} points.")
+                            self.player_hit = False
+                        elif dealer_total == 21:
+                            print(
+                                f"dealer will stand with {phrase}not take anymore cards and has {dealer_total} points. Dealer Wins.")
+                            self.player_hit = False
+                        elif dealer_total < 17:
+                            if dealer_total < 22:
+                                print("Dealer need to take a card")
+                                dealer_card = random.choice(new_deck)
+                                self.dealerhand.append(dealer_card)
+                                dealer_total = self.calulate_score_total(self.dealerhand)
+                                phrase = self.player_hand_str(self.dealerhand)
+                                dealer_total = self.calulate_score_total(self.dealerhand)
+                                print(
+                                    f"dealer has {phrase}total of {dealer_total} points.")
+                                # self.player_hit = False
+                            else:
+                                print(
+                                    f"dealer will stand with {phrase}not take anymore cards and has {dealer_total} points. Dealer Busts.")
+                                self.player_hit = False
+                        else:
+                            self.player_hit = False
+                    else:
+                        if dealer_total >= 17 and dealer_total < 21:
+                            phrase = self.player_hand_str(self.dealerhand)
+                            print(
+                                f"dealer has {phrase}total of {dealer_total} points.")
+                            self.player_hit = False
+                        elif dealer_total == 21:
+                            print(
+                                f"dealer will stand with {phrase}not take anymore cards and has {dealer_total} points. Dealer Wins.")
+                            self.player_hit = False
+                        elif dealer_total < 17:
+                            if dealer_total < 22:
+                                print("Dealer need to take a card")
+                                dealer_card = random.choice(new_deck)
+                                self.dealerhand.append(dealer_card)
+                                dealer_total = self.calulate_score_total(self.dealerhand)
+                                phrase = self.player_hand_str(self.dealerhand)
+                                print(
+                                    f"dealer has {phrase}total of {dealer_total} points.")
+                            else:
+                                print(
+                                    f"dealer will stand with {phrase}not take anymore cards and has {dealer_total} points. Dealer Busts.")
+                                self.player_hit = False
+                        else:
+                            self.player_hit = False
+            if total < dealer_total and dealer_total  < 22 and total < 22:
+                print("Dealer wins")
             else:
-                if self.total >11:
-                    self.total+=1
-                else: 
-                    self.total+=11
-        return self.total
-          
-class Dealer(CardTable):
-    def __init__(self,name):
-        self.name =name
-        self.dealer_hand=[]
-    
-    def draw(self, deck): # passing the deck player draw a card from 
-        self.deal_hand.append(deck.drawCard())
-        return self
-    
-    def showhand(self):
-        for card in self.hand:
-            card.show()
-    
-    def discard(self):
-        return self.hand.pop() 
-    
-     
-    def dealercall(self):
-          
-        self.dealerhand=[] 
-        if len(self.dealerhand) != 2:
-            self.dealerhand.append(random.randint(build.card_deck))
-            return self.dealerhand[0]
-        elif len(self.dealerhand) == 2:
-            return self.dealerhand[0], self.dealerhand[1] 
-    
-                  
-        while self.dealer_call:
-            print(f"Dealer has {self.dealercall()} and X")
-            if self.total.dealerhand > 16:
-                self.dealer_call= False
-            elif self.total.dealerhand < 16:
-                self.dealer_hand.append(random.randint(build.card_deck))
-                print(f"Dealer has the total of {str(sum(self.dealerhand))} from these card {self.dealerhand}")
+                print("Player wins")
+    def player_hand_str(self, hand):
+        list_of_cards = []
+        for card in hand:
+            list_of_cards.append(f"{card.card} of {card.suit} and ")
+        return "".join(list_of_cards)
+    def calulate_score_total(self,player_hand):
+        score = 0
+        for hand in player_hand:
+            if hand.card == "K" or hand.card == "Q" or hand.card == "J" or hand.card == 10:
+                score += 10
+            elif hand.card == 2 or hand.card == 3 or hand.card == 4 or hand.card == 5 or hand.card == 6 or hand.card == 7 or hand.card == 8 or hand.card == 9:
+                score += hand.card
             else:
-                self.total.dealerhand
-                   
-class Player(CardTable):
-    def __init__(self,name):
-        self.name =name
-        self.player_hand=[]
+                high = score + 11
+                if high <= 21:
+                    score += 11
+                else:
+                    score += 1
+        return score
+def main():
+    ui = UI()
+    ui.play_game()
+if __name__ == "__main__":
+    main()
     
-    def draw(self, deck): # passing the deck player draw a card from 
-        self.player_hand.append(deck.drawCard())
-        return self
-    
-    def showhand(self):
-        for card in self.player_hand:
-            card.show()
-    
-    def discard(self):
-        return self.player_hand.pop()
-    
-    def play(self):
-         
-        if len(self.player_hand) !=2:
-            self.player_hand.append(random.randint(build.card_deck)) 
-            return self.player_hand
-        
-        elif len(self.player_hand)==2:
-                return ("You have", self.player_hand)
-                
-        while self.player_call:
-
-            if self.total(self.player_hand) < 21:
-                decision_making =str(input(f"\n You want to stay or hit?\n Enter 1 for Hit: \n Enter 2 Stay: "))
-                
-            if decision_making =='1':
-                self.player_hand.append(random.randint(build.card_deck))
-                
-                print(f"You now have the total of {str(sum(self.player_hand))} from these card {self.player_hand}")
-                
-            elif self.player_hand >21:
-    
-                print(f"You have a total of {str(sum(self.player_hand))} wiht {self.player_hand} \n")
-                print(f"Are you Busted, Dealer Win! :( \n")
-                print(f"Dealer has total {str(sum(self.dealerhand))} with {self.dealer_hand}")
-
-                
-class compare_dealer_and_player_score(CardTable):
-    def __init__(self, dealer_hand, player_hand): 
-        self.dealer_hand = dealer_hand
-        self.player_hand = player_hand
-
-        while self.dealer_call and self.player_call:
-            if self.total.dealer_hand ==21:
-                print("Dealer Win!")
-                break
-            elif self.total.player_hand ==21:
-                print("You win!")
-            elif self.dealer_hand >21:
-                print(f"You has {self.dealer_hand} for total of {self.total.dealer_hand} and dealer has {self.player_hand} out of {self.total.player_hand}\n")
-                print(f"Dealer bust! You Win")
-            elif self.total.player_hand >21:
-                
-                print(f"You has {self.playerhand} for total of {self.total.player_hand} and dealer has {self.dealer_hand} out of {self.total.dealer_hand}\n")
-                print(f"You bust! dealder Win")  
-                        
-            elif self.total.player_hand > self.total.dealer_hand:
-                print(f" You have {self.player_hand} for total of {self.total.player_hand} and \n  user has {self.dealer_hand} for total of {self.total.dealer_hand} ")
-            
-            elif self.total.dealer_hand > self.total.player_hand:
-                print(f"Dealer has {self.dealer_hand} for total of {self.total.dealer_hand} and dealer has {self.player_hand} out of {self.total.player_hand}\n")
-                print(f" dealder Win") 
-            else: 
-                print("dealer and player has the same score")           
-# card =Card("Space",5)
-
-# card.show()
-
-deck = Deck()
-deck.build()
-deck.show()
-# deck.shuffle()
-
-# ku=Player("KU")
-# ku.draw(deck).draw(deck)  # we can draw many card as possible 
-# ku.showhand()
-
-# card =deck.draw()
-# card.show()
